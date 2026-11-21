@@ -43,10 +43,11 @@ dist:
 
 test-dist:
 	docker run --rm \
+		--entrypoint sh \
 		-v "$(CURDIR)/dist:/dist:ro" \
 		-v "$(CURDIR)/scripts/test-extension.sh:/usr/local/bin/test-extension.sh:ro" \
 		"pgautoupgrade/pgautoupgrade:$(PG_MAJOR)-alpine" \
-		sh -eu -c 'cp /dist/postgres-pgsearch.rsa.pub /etc/apk/keys/ && apk add --no-cache /dist/postgres-pgsearch-*.apk && sh /usr/local/bin/test-extension.sh'
+		-eu -c 'cp /dist/postgres-pgsearch.rsa.pub /etc/apk/keys/ && apk add --no-cache /dist/postgres-pgsearch-*.apk && sh /usr/local/bin/test-extension.sh'
 
 test:
 	docker buildx build \
