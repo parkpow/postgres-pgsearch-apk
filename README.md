@@ -45,7 +45,7 @@ RUN apk add --no-cache --virtual .fetch-deps curl \
 Ensure `shared_preload_libraries = 'pg_search'` is set, then run:
 
 ```sql
-CREATE EXTENSION IF NOT EXISTS pg_search;
+CREATE EXTENSION IF NOT EXISTS pg_search CASCADE;
 ```
 
 ## Local Development

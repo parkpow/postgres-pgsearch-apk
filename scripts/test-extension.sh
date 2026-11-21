@@ -58,15 +58,15 @@ if ! run_as_postgres "pg_ctl -D '$PGDATA_TEST' -l '$PGLOG_TEST' -w -o \"-h '' -k
 	exit 1
 fi
 
-EXT_VERSION="$(run_as_postgres "psql -h '$PGRUN_TEST' -U postgres -d postgres -v ON_ERROR_STOP=1 -At <<'SQL'
-CREATE EXTENSION pg_search;
+EXT_VERSION="$(run_as_postgres "psql -h '$PGRUN_TEST' -U postgres -d postgres -v ON_ERROR_STOP=1 -qAt <<'SQL'
+CREATE EXTENSION pg_search CASCADE;
 SELECT extversion FROM pg_extension WHERE extname = 'pg_search';
 SQL
 ")"
 echo "Loaded pg_search extension version: $EXT_VERSION"
 test -n "$EXT_VERSION"
 
-SEARCH_RESULT="$(run_as_postgres "psql -h '$PGRUN_TEST' -U postgres -d postgres -v ON_ERROR_STOP=1 -At <<'SQL'
+SEARCH_RESULT="$(run_as_postgres "psql -h '$PGRUN_TEST' -U postgres -d postgres -v ON_ERROR_STOP=1 -qAt <<'SQL'
 CREATE TABLE documents (
     id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
@@ -79,8 +79,7 @@ INSERT INTO documents (title, body) VALUES
     ('Alpine', 'Lightweight musl container runtime');
 
 CREATE INDEX documents_search_idx ON documents
-USING bm25 (id, title, body)
-WITH (key_field = 'id');
+USING bm25 (id, title, body);
 
 SELECT id || '|' || title
 FROM documents

@@ -54,6 +54,14 @@ RUN cargo pgrx package \
     --features "pg${PG_MAJOR}" \
     --out-dir /usr/src/pkg-stage
 
+# ParadeDB pg_search requires the pgvector ("vector") extension; build latest release from GitHub source
+ARG PGVECTOR_VERSION=0.8.7
+RUN mkdir -p /usr/src/pgvector \
+    && curl -fsSL "https://github.com/pgvector/pgvector/archive/refs/tags/v${PGVECTOR_VERSION}.tar.gz" \
+        | tar -xz --strip-components=1 -C /usr/src/pgvector \
+    && make -C /usr/src/pgvector OPTFLAGS="" with_llvm=no \
+    && make -C /usr/src/pgvector install DESTDIR=/usr/src/pkg-stage with_llvm=no
+
 RUN mkdir -p /root/.abuild \
     && openssl genrsa -out /root/.abuild/postgres-pgsearch.rsa 4096 \
     && openssl rsa -in /root/.abuild/postgres-pgsearch.rsa -pubout -out /root/.abuild/postgres-pgsearch.rsa.pub \

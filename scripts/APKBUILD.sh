@@ -74,4 +74,6 @@ package() {
 
 	test -f "$pkgdir/usr/local/lib/postgresql/pg_search.so"
 	test -f "$pkgdir/usr/local/share/postgresql/extension/pg_search.control"
+	test -f "$pkgdir/usr/local/lib/postgresql/vector.so"
+	test -f "$pkgdir/usr/local/share/postgresql/extension/vector.control"
 }
