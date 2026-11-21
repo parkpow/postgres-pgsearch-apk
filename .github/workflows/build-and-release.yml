@@ -1,0 +1,101 @@
+name: Build and Release APK
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      paradedb_version:
+        description: ParadeDB version (without leading v)
+        required: false
+        default: '0.27.0'
+        type: string
+      pg_major:
+        description: PostgreSQL major version
+        required: false
+        default: '18'
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Resolve build metadata
+        id: meta
+        run: |
+          PG_MAJOR="${{ inputs.pg_major || '18' }}"
+          PARADEDB_VERSION="${{ inputs.paradedb_version || '0.27.0' }}"
+
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            PARADEDB_VERSION="${GITHUB_REF_NAME#v}"
+          fi
+
+          REPO_LOWER="$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')"
+          GHCR_IMAGE="ghcr.io/${REPO_LOWER}"
+
+          echo "pg_major=${PG_MAJOR}" >> "$GITHUB_OUTPUT"
+          echo "paradedb_version=${PARADEDB_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "ghcr_image=${GHCR_IMAGE}" >> "$GITHUB_OUTPUT"
+
+      - name: Expose GitHub Runtime
+        uses: crazy-max/ghaction-github-runtime@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build APK and extract release artifacts
+        run: |
+          make dist \
+            PG_MAJOR="${{ steps.meta.outputs.pg_major }}" \
+            PARADEDB_VERSION="${{ steps.meta.outputs.paradedb_version }}" \
+            BUILDX_FLAGS="--cache-from type=gha --cache-to type=gha,mode=max"
+
+      - name: List extracted artifacts
+        run: ls -la ./dist
+
+      - name: Test built extension
+        run: make test-dist PG_MAJOR="${{ steps.meta.outputs.pg_major }}"
+
+      - name: Upload APK build artifacts
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: postgres-pgsearch-pg${{ steps.meta.outputs.pg_major }}-${{ steps.meta.outputs.paradedb_version }}
+          path: ./dist/*
+
+      - name: Log in to GitHub Container Registry
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push package image to GHCR
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          make push \
+            PG_MAJOR="${{ steps.meta.outputs.pg_major }}" \
+            PARADEDB_VERSION="${{ steps.meta.outputs.paradedb_version }}" \
+            IMAGE_NAME="${{ steps.meta.outputs.ghcr_image }}" \
+            BUILDX_FLAGS="--cache-from type=gha"
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
+        with:
+          files: ./dist/*
+          generate_release_notes: true

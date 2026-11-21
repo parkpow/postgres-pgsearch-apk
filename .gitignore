@@ -1,0 +1,7 @@
+dist/
+packages/
+pkg/
+src/
+*.apk
+APKINDEX.tar.gz
+.DS_Store
