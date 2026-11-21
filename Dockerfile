@@ -23,6 +23,7 @@ RUN apk add --no-cache \
     libxml2-dev \
     lld \
     llvm-dev \
+    openblas-dev \
     openssl \
     openssl-dev \
     perl \

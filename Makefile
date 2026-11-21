@@ -8,9 +8,7 @@ BUILD_ARGS = \
 	--build-arg PARADEDB_VERSION=$(PARADEDB_VERSION)
 
 IMAGE_TAGS = \
-	-t $(IMAGE_NAME):pg$(PG_MAJOR)-$(PARADEDB_VERSION) \
-	-t $(IMAGE_NAME):pg$(PG_MAJOR)-latest \
-	-t $(IMAGE_NAME):latest
+	-t $(IMAGE_NAME):pg$(PG_MAJOR)-$(PARADEDB_VERSION)
 
 .PHONY: build push test test-dist dist clean
 

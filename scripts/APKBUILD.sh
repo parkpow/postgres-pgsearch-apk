@@ -8,7 +8,7 @@ pkgdesc="ParadeDB pg_search: BM25 full-text search extension for PostgreSQL ${PG
 url="https://github.com/paradedb/paradedb"
 arch="x86_64 aarch64"
 license="AGPL-3.0-only"
-depends="libgcc"
+depends="libgcc openblas"
 provides="postgresql-pgsearch=$pkgver-r$pkgrel postgresql${PG_MAJOR:-18}-pgsearch=$pkgver-r$pkgrel"
 # !fhs is required because official postgres/pgautoupgrade Alpine images install
 # PostgreSQL under /usr/local/lib/postgresql and /usr/local/share/postgresql.
