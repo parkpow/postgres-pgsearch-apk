@@ -40,8 +40,6 @@ RUN apk add --no-cache --virtual .fetch-deps curl \
     && apk del .fetch-deps
 ```
 
-See [`examples/`](examples) for complete Dockerfiles.
-
 ## Enable in PostgreSQL
 
 Ensure `shared_preload_libraries = 'pg_search'` is set, then run:
