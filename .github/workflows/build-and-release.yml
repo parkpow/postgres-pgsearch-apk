@@ -20,8 +20,7 @@ on:
         type: string
 
 permissions:
-  contents: write
-  packages: write
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -29,7 +28,22 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      pg_major: ${{ steps.meta.outputs.pg_major }}
+      paradedb_version: ${{ steps.meta.outputs.paradedb_version }}
+      ghcr_image: ${{ steps.meta.outputs.ghcr_image }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -62,7 +76,7 @@ jobs:
           make dist \
             PG_MAJOR="${{ steps.meta.outputs.pg_major }}" \
             PARADEDB_VERSION="${{ steps.meta.outputs.paradedb_version }}" \
-            BUILDX_FLAGS="--cache-from type=gha --cache-to type=gha,mode=max"
+            BUILDX_FLAGS="--cache-from type=gha,scope=build-${{ matrix.arch }} --cache-to type=gha,mode=max,scope=build-${{ matrix.arch }}"
 
       - name: List extracted artifacts
         run: ls -la ./dist
@@ -73,7 +87,7 @@ jobs:
       - name: Upload APK build artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: postgres-pgsearch-pg${{ steps.meta.outputs.pg_major }}-${{ steps.meta.outputs.paradedb_version }}
+          name: postgres-pgsearch-pg${{ steps.meta.outputs.pg_major }}-${{ steps.meta.outputs.paradedb_version }}-${{ matrix.arch }}
           path: ./dist/*
 
       - name: Log in to GitHub Container Registry
@@ -84,17 +98,60 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push package image to GHCR
+      - name: Push arch package image to GHCR
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          make push \
+          make push-arch \
             PG_MAJOR="${{ steps.meta.outputs.pg_major }}" \
             PARADEDB_VERSION="${{ steps.meta.outputs.paradedb_version }}" \
             IMAGE_NAME="${{ steps.meta.outputs.ghcr_image }}" \
-            BUILDX_FLAGS="--cache-from type=gha"
+            ARCH="${{ matrix.arch }}" \
+            BUILDX_FLAGS="--cache-from type=gha,scope=build-${{ matrix.arch }}"
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push multi-arch manifest to GHCR
+        run: |
+          IMAGE="${{ needs.build.outputs.ghcr_image }}"
+          PG_MAJOR="${{ needs.build.outputs.pg_major }}"
+          PARADEDB_VERSION="${{ needs.build.outputs.paradedb_version }}"
+          docker buildx imagetools create \
+            -t "${IMAGE}:pg${PG_MAJOR}-${PARADEDB_VERSION}" \
+            -t "${IMAGE}:pg${PG_MAJOR}-latest" \
+            -t "${IMAGE}:latest" \
+            "${IMAGE}:pg${PG_MAJOR}-${PARADEDB_VERSION}-amd64" \
+            "${IMAGE}:pg${PG_MAJOR}-${PARADEDB_VERSION}-arm64"
+
+      - name: Download APK build artifacts
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: postgres-pgsearch-*
+          path: ./dist
+          merge-multiple: true
+
+      - name: Combine checksums
+        run: |
+          cat ./dist/SHA256SUMS-* > ./dist/SHA256SUMS
+          rm -f ./dist/SHA256SUMS-*
+          ls -la ./dist
 
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:
           files: ./dist/*

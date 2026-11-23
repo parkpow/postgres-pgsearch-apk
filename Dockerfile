@@ -94,9 +94,9 @@ RUN ARCH="$(apk --print-arch)" \
     && cp "${APK_PATH}" /out/postgres-pgsearch.apk \
     && cp "${PUBKEY}" /out/etc/apk/keys/postgres-pgsearch.rsa.pub \
     && cp "${APK_PATH}" "/out/dist/postgres-pgsearch-${PARADEDB_VERSION}-r0-pg${PG_MAJOR}-${ARCH}.apk" \
-    && cp "${INDEX_PATH}" /out/dist/APKINDEX.tar.gz \
-    && cp "${PUBKEY}" /out/dist/postgres-pgsearch.rsa.pub \
-    && (cd /out/dist && sha256sum "postgres-pgsearch-${PARADEDB_VERSION}-r0-pg${PG_MAJOR}-${ARCH}.apk" APKINDEX.tar.gz postgres-pgsearch.rsa.pub > SHA256SUMS)
+    && cp "${INDEX_PATH}" "/out/dist/APKINDEX-${ARCH}.tar.gz" \
+    && cp "${PUBKEY}" "/out/dist/postgres-pgsearch-${ARCH}.rsa.pub" \
+    && (cd /out/dist && sha256sum "postgres-pgsearch-${PARADEDB_VERSION}-r0-pg${PG_MAJOR}-${ARCH}.apk" "APKINDEX-${ARCH}.tar.gz" "postgres-pgsearch-${ARCH}.rsa.pub" > "SHA256SUMS-${ARCH}")
 
 # Stage 2: Install signed APK into clean pgautoupgrade Alpine image and verify BM25 queries
 FROM pgautoupgrade/pgautoupgrade:${PG_MAJOR}-alpine AS test

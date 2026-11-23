@@ -21,7 +21,7 @@ CMD ["postgres", "-c", "shared_preload_libraries=pg_search"]
 
 ### From GitHub Releases
 
-Download `postgres-pgsearch.rsa.pub` and `postgres-pgsearch-<version>-r0-pg<pg_major>-<arch>.apk` from a `v*` release:
+Download `postgres-pgsearch-<arch>.rsa.pub` and `postgres-pgsearch-<version>-r0-pg<pg_major>-<arch>.apk` from a `v*` release (published for both `x86_64` and `aarch64`):
 
 ```dockerfile
 FROM postgres:18-alpine
@@ -31,8 +31,8 @@ ARG PG_MAJOR=18.6
 
 RUN apk add --no-cache --virtual .fetch-deps curl \
     && ARCH="$(apk --print-arch)" \
-    && curl -fsSL "https://github.com/parkpow/postgres-pgsearch-apk/releases/download/v${PARADEDB_VERSION}/postgres-pgsearch.rsa.pub" \
-        -o /etc/apk/keys/postgres-pgsearch.rsa.pub \
+    && curl -fsSL "https://github.com/parkpow/postgres-pgsearch-apk/releases/download/v${PARADEDB_VERSION}/postgres-pgsearch-${ARCH}.rsa.pub" \
+        -o "/etc/apk/keys/postgres-pgsearch-${ARCH}.rsa.pub" \
     && curl -fsSL "https://github.com/parkpow/postgres-pgsearch-apk/releases/download/v${PARADEDB_VERSION}/postgres-pgsearch-${PARADEDB_VERSION}-r0-pg${PG_MAJOR}-${ARCH}.apk" \
         -o /tmp/postgres-pgsearch.apk \
     && apk add --no-cache /tmp/postgres-pgsearch.apk \

@@ -12,7 +12,7 @@ BUILD_ARGS = \
 IMAGE_TAGS = \
 	-t $(IMAGE_NAME):pg$(PG_MAJOR)-$(PARADEDB_VERSION)
 
-.PHONY: build push test test-dist dist clean
+.PHONY: build push push-arch test test-dist dist clean
 
 build:
 	docker buildx build \
@@ -33,6 +33,16 @@ push:
 		$(IMAGE_TAGS) \
 		.
 
+push-arch:
+	docker buildx build \
+		$(BUILD_ARGS) \
+		$(BUILDX_FLAGS) \
+		--target package \
+		--push \
+		--provenance=false \
+		-t $(IMAGE_NAME):pg$(PG_MAJOR)-$(PARADEDB_VERSION)-$(ARCH) \
+		.
+
 dist:
 	rm -rf ./dist
 	mkdir -p ./dist
@@ -49,7 +59,7 @@ test-dist:
 		-v "$(CURDIR)/dist:/dist:ro" \
 		-v "$(CURDIR)/scripts/test-extension.sh:/usr/local/bin/test-extension.sh:ro" \
 		"pgautoupgrade/pgautoupgrade:$(PG_MAJOR)-alpine" \
-		-eu -c 'cp /dist/postgres-pgsearch.rsa.pub /etc/apk/keys/ && apk add --no-cache /dist/postgres-pgsearch-*.apk && sh /usr/local/bin/test-extension.sh'
+		-eu -c 'cp /dist/postgres-pgsearch-*.rsa.pub /etc/apk/keys/ && apk add --no-cache /dist/postgres-pgsearch-*.apk && sh /usr/local/bin/test-extension.sh'
 
 test:
 	docker buildx build \
