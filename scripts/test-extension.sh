@@ -39,7 +39,7 @@ echo "=== 2. Verify shared library dependencies via ldd ==="
 # inspecting a loadable .so outside the postgres process, so check specifically
 # for missing shared libraries rather than raw exit code.
 LDD_OUT="$(ldd "$SO_PATH" 2>&1 || true)"
-echo "$LDD_OUT"
+echo "$LDD_OUT" | grep -v "^Error relocating .*: symbol not found$" || true
 if echo "$LDD_OUT" | grep -Eq "=> not found|Error loading shared library"; then
 	echo "ERROR: Unresolved shared library dependency detected for $SO_PATH" >&2
 	exit 1

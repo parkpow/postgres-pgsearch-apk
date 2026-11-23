@@ -64,12 +64,13 @@ RUN mkdir -p /usr/src/pgvector \
     && make -C /usr/src/pgvector OPTFLAGS="" with_llvm=no \
     && make -C /usr/src/pgvector install DESTDIR=/usr/src/pkg-stage with_llvm=no
 
-RUN mkdir -p /root/.abuild \
-    && openssl genrsa -out /root/.abuild/postgres-pgsearch.rsa 4096 \
-    && openssl rsa -in /root/.abuild/postgres-pgsearch.rsa -pubout -out /root/.abuild/postgres-pgsearch.rsa.pub \
-    && chmod 600 /root/.abuild/postgres-pgsearch.rsa \
-    && cp /root/.abuild/postgres-pgsearch.rsa.pub /etc/apk/keys/postgres-pgsearch.rsa.pub \
-    && printf 'PACKAGER="Plate Recognizer <support@platerecognizer.com>"\nPACKAGER_PRIVKEY="/root/.abuild/postgres-pgsearch.rsa"\n' > /root/.abuild/abuild.conf
+RUN ARCH="$(apk --print-arch)" \
+    && mkdir -p /root/.abuild \
+    && openssl genrsa -out "/root/.abuild/postgres-pgsearch-${ARCH}.rsa" 4096 \
+    && openssl rsa -in "/root/.abuild/postgres-pgsearch-${ARCH}.rsa" -pubout -out "/root/.abuild/postgres-pgsearch-${ARCH}.rsa.pub" \
+    && chmod 600 "/root/.abuild/postgres-pgsearch-${ARCH}.rsa" \
+    && cp "/root/.abuild/postgres-pgsearch-${ARCH}.rsa.pub" "/etc/apk/keys/postgres-pgsearch-${ARCH}.rsa.pub" \
+    && printf 'PACKAGER="Plate Recognizer <support@platerecognizer.com>"\nPACKAGER_PRIVKEY="/root/.abuild/postgres-pgsearch-%s.rsa"\n' "${ARCH}" > /root/.abuild/abuild.conf
 
 COPY scripts/APKBUILD.sh /build/main/postgres-pgsearch/APKBUILD
 
@@ -77,22 +78,21 @@ WORKDIR /build/main/postgres-pgsearch
 
 ENV PGSEARCH_STAGE_DIR=/usr/src/pkg-stage \
     PARADEDB_VERSION=${PARADEDB_VERSION} \
-    PG_MAJOR=${PG_MAJOR} \
-    PACKAGER_PRIVKEY=/root/.abuild/postgres-pgsearch.rsa
+    PG_MAJOR=${PG_MAJOR}
 
 RUN abuild -F -d -P /packages
 
 RUN ARCH="$(apk --print-arch)" \
     && APK_PATH="/packages/main/${ARCH}/postgres-pgsearch-${PARADEDB_VERSION}-r0.apk" \
     && INDEX_PATH="/packages/main/${ARCH}/APKINDEX.tar.gz" \
-    && PUBKEY="/root/.abuild/postgres-pgsearch.rsa.pub" \
+    && PUBKEY="/root/.abuild/postgres-pgsearch-${ARCH}.rsa.pub" \
     && test -f "${APK_PATH}" \
     && test -f "${INDEX_PATH}" \
     && test -f "${PUBKEY}" \
     && mkdir -p /out/packages /out/etc/apk/keys /out/dist \
     && cp -a /packages/main /out/packages/ \
     && cp "${APK_PATH}" /out/postgres-pgsearch.apk \
-    && cp "${PUBKEY}" /out/etc/apk/keys/postgres-pgsearch.rsa.pub \
+    && cp "${PUBKEY}" "/out/etc/apk/keys/postgres-pgsearch-${ARCH}.rsa.pub" \
     && cp "${APK_PATH}" "/out/dist/postgres-pgsearch-${PARADEDB_VERSION}-r0-pg${PG_MAJOR}-${ARCH}.apk" \
     && cp "${INDEX_PATH}" "/out/dist/APKINDEX-${ARCH}.tar.gz" \
     && cp "${PUBKEY}" "/out/dist/postgres-pgsearch-${ARCH}.rsa.pub" \
