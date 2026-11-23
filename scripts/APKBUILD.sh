@@ -1,22 +1,25 @@
 # Maintainer: Plate Recognizer <support@platerecognizer.com>
 # Alpine APKBUILD for ParadeDB pg_search compiled against official PostgreSQL Alpine (/usr/local)
 
+_pg_ver="${PG_MAJOR:-18.6}"
+_pg_major="${_pg_ver%%.*}"
+
 pkgname="postgres-pgsearch"
 pkgver="${PARADEDB_VERSION:-0.27.0}"
 pkgrel=0
-pkgdesc="ParadeDB pg_search: BM25 full-text search extension for PostgreSQL ${PG_MAJOR:-18}"
+pkgdesc="ParadeDB pg_search: BM25 full-text search extension for PostgreSQL ${_pg_ver}"
 url="https://github.com/paradedb/paradedb"
 arch="x86_64 aarch64"
 license="AGPL-3.0-only"
 depends="libgcc openblas"
-provides="postgresql-pgsearch=$pkgver-r$pkgrel postgresql${PG_MAJOR:-18}-pgsearch=$pkgver-r$pkgrel"
+provides="postgresql-pgsearch=$pkgver-r$pkgrel postgresql${_pg_major}-pgsearch=$pkgver-r$pkgrel"
 # !fhs is required because official postgres/pgautoupgrade Alpine images install
 # PostgreSQL under /usr/local/lib/postgresql and /usr/local/share/postgresql.
 options="!fhs !check"
 source=""
 
 build() {
-	local pg_major="${PG_MAJOR:-18}"
+	local pg_major="${_pg_major}"
 	local pg_config_bin
 
 	if [ -n "${PGSEARCH_STAGE_DIR:-}" ] && [ -d "$PGSEARCH_STAGE_DIR/usr" ]; then

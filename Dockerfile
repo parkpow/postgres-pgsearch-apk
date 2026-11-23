@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG PG_MAJOR=18
+ARG PG_MAJOR=18.6
 ARG PARADEDB_VERSION=0.27.0
 
 # Stage 1: Compile ParadeDB pg_search against official PostgreSQL Alpine and package as signed .apk
@@ -41,18 +41,20 @@ RUN git clone --depth 1 --branch "v${PARADEDB_VERSION}" https://github.com/parad
 
 WORKDIR /usr/src/paradedb
 
-RUN PGRX_VERSION=$(sed -nE 's/^pgrx[[:space:]]*=[^"]*"=?([0-9]+\.[0-9]+\.[0-9]+[^"]*)".*/\1/p' Cargo.toml | head -n 1) \
+RUN PG_MAJOR_NUM="${PG_MAJOR%%.*}" \
+    && PGRX_VERSION=$(sed -nE 's/^pgrx[[:space:]]*=[^"]*"=?([0-9]+\.[0-9]+\.[0-9]+[^"]*)".*/\1/p' Cargo.toml | head -n 1) \
     && test -n "${PGRX_VERSION}" \
     && cargo install --locked cargo-pgrx --version "${PGRX_VERSION}" \
-    && cargo pgrx init "--pg${PG_MAJOR}" "$(which pg_config)"
+    && cargo pgrx init "--pg${PG_MAJOR_NUM}" "$(which pg_config)"
 
 WORKDIR /usr/src/paradedb/pg_search
 
-RUN cargo pgrx package \
-    --pg-config "$(which pg_config)" \
-    --no-default-features \
-    --features "pg${PG_MAJOR}" \
-    --out-dir /usr/src/pkg-stage
+RUN PG_MAJOR_NUM="${PG_MAJOR%%.*}" \
+    && cargo pgrx package \
+        --pg-config "$(which pg_config)" \
+        --no-default-features \
+        --features "pg${PG_MAJOR_NUM}" \
+        --out-dir /usr/src/pkg-stage
 
 # ParadeDB pg_search requires the pgvector ("vector") extension; build latest release from GitHub source
 ARG PGVECTOR_VERSION=0.8.7

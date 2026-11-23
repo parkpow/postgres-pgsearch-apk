@@ -1,4 +1,4 @@
-PG_MAJOR ?= 18
+PG_MAJOR ?= 18.6
 PARADEDB_VERSION ?= 0.27.0
 PGVECTOR_VERSION ?= 0.8.7
 IMAGE_NAME ?= platerecognizer/postgres-pgsearch-apk

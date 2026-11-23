@@ -27,7 +27,7 @@ Download `postgres-pgsearch.rsa.pub` and `postgres-pgsearch-<version>-r0-pg<pg_m
 FROM postgres:18-alpine
 
 ARG PARADEDB_VERSION=0.27.0
-ARG PG_MAJOR=18
+ARG PG_MAJOR=18.6
 
 RUN apk add --no-cache --virtual .fetch-deps curl \
     && ARCH="$(apk --print-arch)" \
@@ -50,16 +50,16 @@ CREATE EXTENSION IF NOT EXISTS pg_search CASCADE;
 
 ## Local Development
 
-Requires Docker Buildx. Defaults: `PG_MAJOR=18`, `PARADEDB_VERSION=0.27.0`.
+Requires Docker Buildx. Defaults: `PG_MAJOR=18.6`, `PARADEDB_VERSION=0.27.0`.
 
 ```sh
-make test   # Build APK, install into pgautoupgrade:18-alpine, and run BM25 tests
+make test   # Build APK, install into pgautoupgrade:18.6-alpine, and run BM25 tests
 make build  # Build the scratch package image
 make dist   # Extract release files (.apk, APKINDEX.tar.gz, .rsa.pub, SHA256SUMS) into ./dist/
 make clean  # Remove ./dist/
 ```
 
-Override defaults with `make test PARADEDB_VERSION=0.27.0 PG_MAJOR=18`.
+Override defaults with `make test PARADEDB_VERSION=0.27.0 PG_MAJOR=18.6`.
 
 ## Releases
 

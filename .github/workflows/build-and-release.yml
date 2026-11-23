@@ -14,9 +14,9 @@ on:
         default: '0.27.0'
         type: string
       pg_major:
-        description: PostgreSQL major version
+        description: PostgreSQL version (e.g. 18.6 or 18)
         required: false
-        default: '18'
+        default: '18.6'
         type: string
 
 permissions:
@@ -37,7 +37,7 @@ jobs:
       - name: Resolve build metadata
         id: meta
         run: |
-          PG_MAJOR="${{ inputs.pg_major || '18' }}"
+          PG_MAJOR="${{ inputs.pg_major || '18.6' }}"
           PARADEDB_VERSION="${{ inputs.paradedb_version || '0.27.0' }}"
 
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
